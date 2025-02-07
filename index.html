@@ -3,13 +3,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBPhdtFn5d3vDYmfJ7aIjud4qXX4y5chgo",
-  authDomain: "mitumorimeijin.firebaseapp.com",
-  projectId: "mitumorimeijin",
-  storageBucket: "mitumorimeijin.firebasestorage.app",
-  messagingSenderId: "1011065875219",
-  appId: "1:1011065875219:web:986be944fa26b8a2d188e6",
-  measurementId: "G-TM5QPNW91R"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -27,15 +26,24 @@ export default function CompanySearch() {
       return;
     }
 
-    const q = query(collection(db, "companies"), where("name", ">=", value), where("name", "<=", value + "\uf8ff"));
-    const querySnapshot = await getDocs(q);
+    try {
+      const q = query(
+        collection(db, "companies"),
+        where("name", ">=", value),
+        where("name", "<=", value + "\uf8ff")
+      );
+      const querySnapshot = await getDocs(q);
 
-    const results = [];
-    querySnapshot.forEach((doc) => {
-      results.push({ id: doc.id, ...doc.data() });
-    });
+      const results = [];
+      querySnapshot.forEach((doc) => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
 
-    setSuggestions(results);
+      setSuggestions(results);
+    } catch (error) {
+      console.error("Error fetching companies: ", error);
+      setSuggestions([]);
+    }
   };
 
   const handleSelect = (company) => {
@@ -46,16 +54,22 @@ export default function CompanySearch() {
 
   return (
     <div>
+      <h1>会社検索</h1>
       <input
         type="text"
         value={search}
         onChange={(e) => handleSearch(e.target.value)}
         placeholder="会社名を入力..."
+        style={{ padding: "8px", width: "300px", marginBottom: "10px" }}
       />
       {suggestions.length > 0 && (
-        <ul>
+        <ul style={{ listStyleType: "none", padding: 0 }}>
           {suggestions.map((company) => (
-            <li key={company.id} onClick={() => handleSelect(company)}>
+            <li
+              key={company.id}
+              onClick={() => handleSelect(company)}
+              style={{ cursor: "pointer", padding: "5px", borderBottom: "1px solid #ccc" }}
+            >
               {company.name}
             </li>
           ))}
@@ -63,12 +77,12 @@ export default function CompanySearch() {
       )}
 
       {selectedCompany && (
-        <div>
-          <p>選択した会社: {selectedCompany.name}</p>
-          <p>住所: {selectedCompany.address}</p>
+        <div style={{ marginTop: "20px" }}>
+          <h2>選択した会社</h2>
+          <p><strong>会社名:</strong> {selectedCompany.name}</p>
+          <p><strong>住所:</strong> {selectedCompany.address}</p>
         </div>
       )}
     </div>
   );
 }
-
