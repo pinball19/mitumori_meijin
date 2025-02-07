@@ -30,14 +30,25 @@
       margin-top: 20px;
     }
   </style>
-  <script>
-    let companies = [
-      { id: 1, name: "株式会社A", address: "東京都千代田区1-1-1" },
-      { id: 2, name: "株式会社B", address: "大阪府大阪市中央区2-2-2" },
-      { id: 3, name: "株式会社C", address: "福岡県福岡市博多区3-3-3" }
-    ];
+  <script type="module">
+    // Firebaseの設定
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    function handleSearch(value) {
+　　　const firebaseConfig = {
+　　　  apiKey: "AIzaSyBPhdtFn5d3vDYmfJ7aIjud4qXX4y5chgo",
+　　　  authDomain: "mitumorimeijin.firebaseapp.com",
+　　　  projectId: "mitumorimeijin",
+　　　  storageBucket: "mitumorimeijin.firebasestorage.app",
+　　　  messagingSenderId: "1011065875219",
+　　　  appId: "1:1011065875219:web:986be944fa26b8a2d188e6",
+　　　  measurementId: "G-TM5QPNW91R"
+　　　};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function handleSearch(value) {
       const suggestions = document.getElementById("suggestions");
       suggestions.innerHTML = "";
 
@@ -45,21 +56,31 @@
         return;
       }
 
-      const filteredCompanies = companies.filter(company =>
-        company.name.includes(value)
-      );
+      try {
+        const q = query(
+          collection(db, "companies"),
+          where("name", ">=", value),
+          where("name", "<=", value + "\uf8ff")
+        );
+        const querySnapshot = await getDocs(q);
 
-      filteredCompanies.forEach(company => {
-        const li = document.createElement("li");
-        li.textContent = company.name;
-        li.onclick = () => handleSelect(company);
-        suggestions.appendChild(li);
-      });
+        querySnapshot.forEach((doc) => {
+          const company = doc.data();
+          const li = document.createElement("li");
+          li.textContent = company.name;
+          li.onclick = () => handleSelect(company);
+          suggestions.appendChild(li);
+        });
+      } catch (error) {
+        console.error("Error fetching companies: ", error);
+      }
     }
 
     function handleSelect(company) {
       document.getElementById("selectedCompanyName").textContent = company.name;
       document.getElementById("selectedCompanyAddress").textContent = company.address;
+      document.getElementById("selectedCompanyPhone").textContent = company.phone;
+      document.getElementById("selectedCompanyPost").textContent = company.post;
       document.getElementById("searchInput").value = company.name;
       document.getElementById("suggestions").innerHTML = "";
     }
@@ -79,6 +100,8 @@
     <h2>選択した会社</h2>
     <p><strong>会社名:</strong> <span id="selectedCompanyName"></span></p>
     <p><strong>住所:</strong> <span id="selectedCompanyAddress"></span></p>
+    <p><strong>電話番号:</strong> <span id="selectedCompanyPhone"></span></p>
+    <p><strong>郵便番号:</strong> <span id="selectedCompanyPost"></span></p>
   </div>
 </body>
 </html>
