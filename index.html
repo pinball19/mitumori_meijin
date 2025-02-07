@@ -1,89 +1,84 @@
-import { useState } from "react";
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBPhdtFn5d3vDYmfJ7aIjud4qXX4y5chgo",
-  authDomain: "mitumorimeijin.firebaseapp.com",
-  projectId: "mitumorimeijin",
-  storageBucket: "mitumorimeijin.firebasestorage.app",
-  messagingSenderId: "1011065875219",
-  appId: "1:1011065875219:web:986be944fa26b8a2d188e6",
-  measurementId: "G-TM5QPNW91R"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-export default function CompanySearch() {
-  const [search, setSearch] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-
-  const handleSearch = async (value) => {
-    setSearch(value);
-    if (value.length < 2) {
-      setSuggestions([]);
-      return;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会社検索</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
     }
+    input {
+      padding: 8px;
+      width: 300px;
+      margin-bottom: 10px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      cursor: pointer;
+      padding: 5px;
+      border-bottom: 1px solid #ccc;
+    }
+    li:hover {
+      background-color: #f0f0f0;
+    }
+    .result {
+      margin-top: 20px;
+    }
+  </style>
+  <script>
+    let companies = [
+      { id: 1, name: "株式会社A", address: "東京都千代田区1-1-1" },
+      { id: 2, name: "株式会社B", address: "大阪府大阪市中央区2-2-2" },
+      { id: 3, name: "株式会社C", address: "福岡県福岡市博多区3-3-3" }
+    ];
 
-    try {
-      const q = query(
-        collection(db, "companies"),
-        where("name", ">=", value),
-        where("name", "<=", value + "\uf8ff")
+    function handleSearch(value) {
+      const suggestions = document.getElementById("suggestions");
+      suggestions.innerHTML = "";
+
+      if (value.length < 2) {
+        return;
+      }
+
+      const filteredCompanies = companies.filter(company =>
+        company.name.includes(value)
       );
-      const querySnapshot = await getDocs(q);
 
-      const results = [];
-      querySnapshot.forEach((doc) => {
-        results.push({ id: doc.id, ...doc.data() });
+      filteredCompanies.forEach(company => {
+        const li = document.createElement("li");
+        li.textContent = company.name;
+        li.onclick = () => handleSelect(company);
+        suggestions.appendChild(li);
       });
-
-      setSuggestions(results);
-    } catch (error) {
-      console.error("Error fetching companies: ", error);
-      setSuggestions([]);
     }
-  };
 
-  const handleSelect = (company) => {
-    setSelectedCompany(company);
-    setSearch(company.name);
-    setSuggestions([]);
-  };
+    function handleSelect(company) {
+      document.getElementById("selectedCompanyName").textContent = company.name;
+      document.getElementById("selectedCompanyAddress").textContent = company.address;
+      document.getElementById("searchInput").value = company.name;
+      document.getElementById("suggestions").innerHTML = "";
+    }
+  </script>
+</head>
+<body>
+  <h1>会社検索</h1>
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="会社名を入力..."
+    oninput="handleSearch(this.value)"
+  />
+  <ul id="suggestions"></ul>
 
-  return (
-    <div>
-      <h1>会社検索1</h1>
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="会社名を入力..."
-        style={{ padding: "8px", width: "300px", marginBottom: "10px" }}
-      />
-      {suggestions.length > 0 && (
-        <ul style={{ listStyleType: "none", padding: 0 }}>
-          {suggestions.map((company) => (
-            <li
-              key={company.id}
-              onClick={() => handleSelect(company)}
-              style={{ cursor: "pointer", padding: "5px", borderBottom: "1px solid #ccc" }}
-            >
-              {company.name}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {selectedCompany && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>選択した会社</h2>
-          <p><strong>会社名:</strong> {selectedCompany.name}</p>
-          <p><strong>住所:</strong> {selectedCompany.address}</p>
-        </div>
-      )}
-    </div>
-  );
-}
+  <div class="result">
+    <h2>選択した会社</h2>
+    <p><strong>会社名:</strong> <span id="selectedCompanyName"></span></p>
+    <p><strong>住所:</strong> <span id="selectedCompanyAddress"></span></p>
+  </div>
+</body>
+</html>
