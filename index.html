@@ -1,1 +1,73 @@
+import { useState } from "react";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+export default function CompanySearch() {
+  const [search, setSearch] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+
+  const handleSearch = async (value) => {
+    setSearch(value);
+    if (value.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    const q = query(collection(db, "companies"), where("name", ">=", value), where("name", "<=", value + "\uf8ff"));
+    const querySnapshot = await getDocs(q);
+
+    const results = [];
+    querySnapshot.forEach((doc) => {
+      results.push({ id: doc.id, ...doc.data() });
+    });
+
+    setSuggestions(results);
+  };
+
+  const handleSelect = (company) => {
+    setSelectedCompany(company);
+    setSearch(company.name);
+    setSuggestions([]);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => handleSearch(e.target.value)}
+        placeholder="会社名を入力..."
+      />
+      {suggestions.length > 0 && (
+        <ul>
+          {suggestions.map((company) => (
+            <li key={company.id} onClick={() => handleSelect(company)}>
+              {company.name}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {selectedCompany && (
+        <div>
+          <p>選択した会社: {selectedCompany.name}</p>
+          <p>住所: {selectedCompany.address}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
