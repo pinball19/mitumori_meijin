@@ -1,107 +1,95 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>会社検索</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    input {
-      padding: 8px;
-      width: 300px;
-      margin-bottom: 10px;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      cursor: pointer;
-      padding: 5px;
-      border-bottom: 1px solid #ccc;
-    }
-    li:hover {
-      background-color: #f0f0f0;
-    }
-    .result {
-      margin-top: 20px;
-    }
-  </style>
-  <script type="module">
-    // Firebaseの設定
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+// 旅行プラン作成システム（OpenAI API + ダミーデータ版）
+// HTML + CSS + JavaScript + Firebase
 
-　　　const firebaseConfig = {
-　　　  apiKey: "AIzaSyBPhdtFn5d3vDYmfJ7aIjud4qXX4y5chgo",
-　　　  authDomain: "mitumorimeijin.firebaseapp.com",
-　　　  projectId: "mitumorimeijin",
-　　　  storageBucket: "mitumorimeijin.firebasestorage.app",
-　　　  messagingSenderId: "1011065875219",
-　　　  appId: "1:1011065875219:web:986be944fa26b8a2d188e6",
-　　　  measurementId: "G-TM5QPNW91R"
-　　　};
+// --- ダミーデータ（本来はAPIから取得） ---
+const dummyHotels = [
+  { name: "京都グランドホテル", type: "王道", price: "10,000円", location: "京都駅前" },
+  { name: "嵐山温泉旅館", type: "リピーター向け", price: "12,000円", location: "嵐山" }
+];
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const dummyRestaurants = [
+  { name: "京都和食亭", type: "王道", budget: "1,500円", location: "京都市中京区" },
+  { name: "大阪寿司館", type: "リピーター向け", budget: "2,000円", location: "大阪市中央区" }
+];
 
-    async function handleSearch(value) {
-      const suggestions = document.getElementById("suggestions");
-      suggestions.innerHTML = "";
+const dummyAttractions = [
+  { name: "清水寺", time: "9:00-11:00", price: "500円" },
+  { name: "大阪城", time: "14:00-16:00", price: "600円" }
+];
 
-      if (value.length < 2) {
-        return;
-      }
+// --- UIに表示する関数 ---
+function displayOptions(category, data) {
+  const container = document.getElementById(`${category}-options`);
+  container.innerHTML = "";
+  data.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "option-card";
+    card.innerHTML = `<h3>${item.name}</h3><p>${item.type || item.time}</p><p>${item.price || item.budget}</p>`;
+    card.onclick = () => selectOption(category, item);
+    container.appendChild(card);
+  });
+}
 
-      try {
-        const q = query(
-          collection(db, "companies"),
-          where("name", ">=", value),
-          where("name", "<=", value + "\uf8ff")
-        );
-        const querySnapshot = await getDocs(q);
+// --- ユーザーが選択したプランを保存 ---
+const selectedOptions = {};
+function selectOption(category, choice) {
+  selectedOptions[category] = choice;
+  document.getElementById(`${category}-selected`).innerHTML = `<p>選択: ${choice.name}</p>`;
+}
 
-        querySnapshot.forEach((doc) => {
-          const company = doc.data();
-          const li = document.createElement("li");
-          li.textContent = company.name;
-          li.onclick = () => handleSelect(company);
-          suggestions.appendChild(li);
-        });
-      } catch (error) {
-        console.error("Error fetching companies: ", error);
-      }
+// --- OpenAI API 連携 ---
+async function generatePlanWithAI() {
+  if (!selectedOptions["hotel"] || !selectedOptions["restaurant"] || !selectedOptions["attraction"]) {
+    alert("すべての項目を選択してください");
+    return;
+  }
+
+  const userSelection = {
+    hotel: selectedOptions["hotel"].name,
+    restaurant: selectedOptions["restaurant"].name,
+    attraction: selectedOptions["attraction"].name
+  };
+
+  const prompt = `以下の条件で最適な旅行プランを作成してください:\n\n`
+    + `宿泊施設: ${userSelection.hotel}\n`
+    + `食事: ${userSelection.restaurant}\n`
+    + `観光地: ${userSelection.attraction}\n\n`
+    + "最適な時間配分を考慮し、3日間の旅行行程を提案してください。";
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sk-proj-DiMrno806PDeXdMHJmFNT3BlbkFJm5ZfCCOYRHf54fXgSJAJ}` // ←APIキーを手動で入力
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        prompt: prompt,
+        max_tokens: 500
+      })
+    });
+
+    const data = await response.json();
+    if (data.choices && data.choices.length > 0) {
+      document.getElementById("final-plan").innerHTML = `<h2>最終旅行プラン</h2><pre>${data.choices[0].text}</pre>`;
+    } else {
+      document.getElementById("final-plan").innerHTML = `<h2>エラー</h2><p>旅行プランの生成に失敗しました。</p>`;
     }
+  } catch (error) {
+    console.error("OpenAI API エラー:", error);
+    document.getElementById("final-plan").innerHTML = `<h2>エラー</h2><p>APIリクエスト中にエラーが発生しました。</p>`;
+  }
+}
 
-    function handleSelect(company) {
-      document.getElementById("selectedCompanyName").textContent = company.name;
-      document.getElementById("selectedCompanyAddress").textContent = company.address;
-      document.getElementById("selectedCompanyPhone").textContent = company.phone;
-      document.getElementById("selectedCompanyPost").textContent = company.post;
-      document.getElementById("searchInput").value = company.name;
-      document.getElementById("suggestions").innerHTML = "";
-    }
-  </script>
-</head>
-<body>
-  <h1>会社検索</h1>
-  <input
-    type="text"
-    id="searchInput"
-    placeholder="会社名を入力..."
-    oninput="handleSearch(this.value)"
-  />
-  <ul id="suggestions"></ul>
+// --- 最終プランの生成 ---
+function generatePlan() {
+  generatePlanWithAI();
+}
 
-  <div class="result">
-    <h2>選択した会社</h2>
-    <p><strong>会社名:</strong> <span id="selectedCompanyName"></span></p>
-    <p><strong>住所:</strong> <span id="selectedCompanyAddress"></span></p>
-    <p><strong>電話番号:</strong> <span id="selectedCompanyPhone"></span></p>
-    <p><strong>郵便番号:</strong> <span id="selectedCompanyPost"></span></p>
-  </div>
-</body>
-</html>
+// --- 初期データ取得（ダミーデータを使用） ---
+document.addEventListener("DOMContentLoaded", () => {
+  displayOptions("hotel", dummyHotels);
+  displayOptions("restaurant", dummyRestaurants);
+  displayOptions("attraction", dummyAttractions);
+});
