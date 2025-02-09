@@ -1,6 +1,9 @@
 // 旅行プラン作成システム（OpenAI API + ダミーデータ版）
 // HTML + CSS + JavaScript + Firebase
 
+// --- OpenAI APIキー（手動で設定） ---
+const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"; // ここに手動でAPIキーを入力
+
 // --- ダミーデータ（本来はAPIから取得） ---
 const dummyHotels = [
   { name: "京都グランドホテル", type: "王道", price: "10,000円", location: "京都駅前" },
@@ -61,7 +64,7 @@ async function generatePlanWithAI() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${sk-proj-DiMrno806PDeXdMHJmFNT3BlbkFJm5ZfCCOYRHf54fXgSJAJ}` // ←APIキーを手動で入力
+        "Authorization": `Bearer ${OPENAI_API_KEY}` // ←APIキーを手動で入力
       },
       body: JSON.stringify({
         model: "gpt-4",
@@ -71,6 +74,7 @@ async function generatePlanWithAI() {
     });
 
     const data = await response.json();
+    console.log("OpenAI API Response:", data); // デバッグ用
     if (data.choices && data.choices.length > 0) {
       document.getElementById("final-plan").innerHTML = `<h2>最終旅行プラン</h2><pre>${data.choices[0].text}</pre>`;
     } else {
