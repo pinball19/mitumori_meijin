@@ -1,8 +1,17 @@
 // 旅行プラン作成システム（OpenAI API + ダミーデータ版）
-// HTML + CSS + JavaScript + Firebase
 
-// --- OpenAI APIキー（手動で設定） ---
-const OPENAI_API_KEY = "sk-proj-DiMrno806PDeXdMHJmFNT3BlbkFJm5ZfCCOYRHf54fXgSJAJ"; // ここに手動でAPIキーを入力
+// --- OpenAI APIキー（ローカルストレージで管理） ---
+let OPENAI_API_KEY = localStorage.getItem("openai_api_key") || "";
+
+// APIキーを設定するための関数
+function setApiKey() {
+  const key = prompt("OpenAI APIキーを入力してください:");
+  if (key) {
+    OPENAI_API_KEY = key;
+    localStorage.setItem("openai_api_key", key);
+    alert("APIキーが保存されました！");
+  }
+}
 
 // --- ダミーデータ（本来はAPIから取得） ---
 const dummyHotels = [
@@ -47,6 +56,11 @@ async function generatePlanWithAI() {
     return;
   }
 
+  if (!OPENAI_API_KEY) {
+    alert("APIキーが設定されていません。設定ボタンを押してキーを入力してください。");
+    return;
+  }
+
   const userSelection = {
     hotel: selectedOptions["hotel"].name,
     restaurant: selectedOptions["restaurant"].name,
@@ -64,7 +78,7 @@ async function generatePlanWithAI() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}` // ←APIキーを手動で入力
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
         model: "gpt-4",
@@ -75,6 +89,11 @@ async function generatePlanWithAI() {
 
     const data = await response.json();
     console.log("OpenAI API Response:", data); // デバッグ用
+
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
     if (data.choices && data.choices.length > 0) {
       document.getElementById("final-plan").innerHTML = `<h2>最終旅行プラン</h2><pre>${data.choices[0].text}</pre>`;
     } else {
@@ -82,7 +101,7 @@ async function generatePlanWithAI() {
     }
   } catch (error) {
     console.error("OpenAI API エラー:", error);
-    document.getElementById("final-plan").innerHTML = `<h2>エラー</h2><p>APIリクエスト中にエラーが発生しました。</p>`;
+    document.getElementById("final-plan").innerHTML = `<h2>エラー</h2><p>${error.message}</p>`;
   }
 }
 
@@ -96,4 +115,12 @@ document.addEventListener("DOMContentLoaded", () => {
   displayOptions("hotel", dummyHotels);
   displayOptions("restaurant", dummyRestaurants);
   displayOptions("attraction", dummyAttractions);
+});
+
+// --- HTMLにAPIキー設定ボタンを追加 ---
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.createElement("button");
+  button.innerText = "APIキーを設定";
+  button.onclick = setApiKey;
+  document.body.appendChild(button);
 });
